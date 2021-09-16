@@ -1,58 +1,54 @@
 <html>
   <body>
     <input type="file">
-    <textarea id="incoming" rows="8" cols="80"></textarea>
-    <button type="button" id="send">send</button>
-    <pre id="outcoming"></pre>
     <script src="simple-peer-wrapper.min.js"></script>
     <script>
-    const options = {
-      serverUrl: 'http://localhost:3031',
-    };
+      const options = {
+        serverUrl: 'http://localhost:3031',
+      };
 
-    const spw = new SimplePeerWrapper(options);
+      const spw = new SimplePeerWrapper(options);
 
-    spw.connect();
+      spw.connect();
 
-    spw.on('data', (data) => {
-      const a = document.createElement('a');
-      a.innerHTML = 'Download';
-      document.body.appendChild(a);
-      const blob = new Blob([data.data], {type: 'octet/stream'});
-      const url = window.URL.createObjectURL(blob);
-      a.href = url;
-      a.target = '_blank';
-    });
+      spw.on('connect', () => {
+        console.log('connected');
+      });
 
-    document.querySelector('#send').addEventListener('click', (e) => {
-      const incomingEl = document.querySelector('#incoming');
-      e.preventDefault();
-      if (incomingEl.value) {
-        spw.send(incomingEl.value);
+      spw.on('data', (data) => {
+        const a = document.createElement('a');
+        a.innerHTML = `Download (${data.data.filename})`;
+        document.body.appendChild(a);
+        const blob = new Blob([data.data.result], {type: 'octet/stream'});
+        const url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = `${data.data.filename}`;
+      });
+
+      function prepareFile(filename) {
+        return (e) => {
+          spw.send({
+            result: e.target.result,
+            filename,
+          });
+        };
       }
-    });
 
-    function readFile(e) {
-      console.log('read file');
-      console.log(e.target.result);
-      spw.send(e.target.result);
-    }
-
-    function changeFile() {
-      console.log('change file');
       const input = document.querySelector('input[type=file]');
-      const file = input.files[0];
-      const reader = new FileReader();
-      reader.addEventListener('load', readFile);
-      reader.readAsText(file);
-    }
 
-    document.querySelector('input[type=file]')
-      .addEventListener('change', changeFile);
+      function changeFile() {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.addEventListener('load', prepareFile(file.name));
+        reader.readAsText(file);
+      }
 
-    window.onbeforeunload = () => {
-      spw.close();
-    };
+      input
+        .addEventListener('change', changeFile);
+
+      window.onbeforeunload = () => {
+        spw.close();
+      };
     </script>
   </body>
 </html>

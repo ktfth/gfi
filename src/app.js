@@ -57,6 +57,6 @@ app.hooks(appHooks);
 
 app.server.listen(app.get('sp-port'));
 
-console.log(`Listening on ${app.get('sp-port')}`);
+logger.info('Simple peer application started on http://%s:%d', app.get('host'), app.get('sp-port'));
 
 module.exports = app;
