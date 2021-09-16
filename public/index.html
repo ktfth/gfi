@@ -9,16 +9,24 @@
 
       const spw = new SimplePeerWrapper(options);
 
+      const files = [];
+
       spw.connect();
 
       spw.on('connect', () => {
         console.log('connected');
+        files.forEach((d) => {
+          spw.send(d.data);
+        });
       });
 
       spw.on('data', (data) => {
         const a = document.createElement('a');
         a.innerHTML = `Download (${data.data.filename})`;
         document.body.appendChild(a);
+        if (!files.some((d) => d.userId === data.userId)) {
+          files.push(data);
+        }
         const blob = new Blob([data.data.result], {type: 'octet/stream'});
         const url = window.URL.createObjectURL(blob);
         a.href = url;
