@@ -1,4 +1,5 @@
 {
-  "host": "gfi-app.feathersjs.com",
-  "port": "PORT"
+  "host": "gfi-fileshare.herokuapp.com",
+  "port": "PORT",
+  "sp-port": 3031
 }
