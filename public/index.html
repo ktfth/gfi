@@ -1,6 +1,7 @@
 <html>
   <body>
     <input type="file">
+    <pre id="log"></pre>
     <script src="simple-peer-wrapper.min.js"></script>
     <script>
       const options = {
@@ -10,14 +11,24 @@
       const spw = new SimplePeerWrapper(options);
 
       const files = [];
+      let connectionState = true;
+
+      setInterval(() => {
+        if (connectionState) {
+          window.location.href = '/';
+        }
+      }, 2000);
 
       spw.connect();
 
       spw.on('connect', () => {
         console.log('connected');
+        const log = document.querySelector('#log');
         files.forEach((d) => {
           spw.send(d.data);
         });
+        log.textContent = 'Connected!';
+        connectionState = false;
       });
 
       spw.on('data', (data) => {
