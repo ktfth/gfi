@@ -3,8 +3,6 @@ const favicon = require('serve-favicon');
 const compress = require('compression');
 const helmet = require('helmet');
 const cors = require('cors');
-const http = require('http');
-const SimplePeerServer = require('simple-peer-server');
 const logger = require('./logger');
 
 const feathers = require('@feathersjs/feathers');
@@ -19,10 +17,6 @@ const appHooks = require('./app.hooks');
 const channels = require('./channels');
 
 const app = express(feathers());
-
-app.server = new http.createServer(app);
-
-const spServer = new SimplePeerServer(app.server);
 
 // Load app configuration
 app.configure(configuration());
@@ -54,9 +48,5 @@ app.use(express.notFound());
 app.use(express.errorHandler({ logger }));
 
 app.hooks(appHooks);
-
-app.server.listen(app.get('sp-port'));
-
-logger.info('Simple peer application started on http://%s:%d', app.get('host'), app.get('sp-port'));
 
 module.exports = app;
