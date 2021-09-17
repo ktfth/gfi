@@ -1,24 +1,43 @@
 <html>
   <body>
     <input type="file">
-    <script src="./simple-peer-wrapper.min.js" type="text/javascript"></script>
+    <pre id="log"></pre>
+    <script src="simple-peer-wrapper.min.js"></script>
     <script>
       const options = {
-        serverUrl: 'https://gfi.vercel.app:3031',
+        serverUrl: 'https://gfi-com.vercel.app',
       };
 
       const spw = new SimplePeerWrapper(options);
+
+      const files = [];
+      let connectionState = true;
+
+      setInterval(() => {
+        if (connectionState) {
+          window.location.href = '/';
+        }
+      }, 2000);
 
       spw.connect();
 
       spw.on('connect', () => {
         console.log('connected');
+        const log = document.querySelector('#log');
+        files.forEach((d) => {
+          spw.send(d.data);
+        });
+        log.textContent = 'Connected!';
+        connectionState = false;
       });
 
       spw.on('data', (data) => {
         const a = document.createElement('a');
         a.innerHTML = `Download (${data.data.filename})`;
         document.body.appendChild(a);
+        if (!files.some((d) => d.userId === data.userId)) {
+          files.push(data);
+        }
         const blob = new Blob([data.data.result], {type: 'octet/stream'});
         const url = window.URL.createObjectURL(blob);
         a.href = url;
