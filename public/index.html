@@ -1,9 +1,56 @@
 <html>
   <body>
+    <input type="text" id="room-id">
+    <button type="button" id="enter-room">enter</button>
+    <button type="button" id="create-room">create</button>
     <input type="file">
     <pre id="log"></pre>
     <script src="simple-peer-wrapper.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/core-js/2.1.4/core.min.js"></script>
+    <script src="//unpkg.com/@feathersjs/client@^3.0.0/dist/feathers.js"></script>
     <script>
+      var app = feathers();
+      var restClient = feathers.rest('http://localhost:3030');
+
+      app.configure(restClient.fetch(window.fetch));
+
+      const rooms = app.service('v1/rooms');
+
+      const createRoom = async ({ id }) => {
+        const room = await rooms.create({
+          id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        return room;
+      };
+
+      const createRoomEl = document.querySelector('#create-room');
+      const enterRoomEl = document.querySelector('#enter-room');
+      const roomIdEl = document.querySelector('#room-id');
+      let currentRoom = null;
+
+      const generateId = (n=4) => {
+        let seq = new Array(n).fill(0);
+        const randomInt = () => Math.max(0, Math.floor(Math.random() * 9));
+        seq = seq.map(v => randomInt());
+        return seq.join('');
+      };
+
+      createRoomEl.addEventListener('click', async (e) => {
+        const id = generateId();
+        e.preventDefault();
+        if (!currentRoom) {
+          currentRoom = await createRoom({ id });
+          window.location.href = `/?roomId=${currentRoom.id}`;
+          roomIdEl.value = currentRoom.id;
+        }
+      });
+
+      enterRoomEl.addEventListener('click', (e) => {
+        window.location.href = `/?roomId=${roomIdEl.value}`;
+      });
+
       const options = {
         serverUrl: 'https://gfi-com.herokuapp.com',
       };
@@ -13,40 +60,50 @@
       const files = [];
       let connectionState = true;
 
+      const url = new URL(window.location.href);
+      const currentRoomId = url.searchParams.get('roomId') || currentRoom?.id || '';
+
+      roomIdEl.value = currentRoomId;
+
       setInterval(() => {
-        if (connectionState) {
-          window.location.href = '/';
+        if (connectionState && currentRoomId) {
+          window.location.href = `/?roomId=${currentRoomId}`;
         }
       }, 2000);
 
       spw.connect();
 
       spw.on('connect', () => {
-        console.log('connected');
         const log = document.querySelector('#log');
-        files.forEach((d) => {
-          spw.send(d.data);
-        });
-        log.textContent = 'Connected!';
-        connectionState = false;
+        if (currentRoomId) {
+          console.log('connected');
+          files.forEach((d) => {
+            spw.send(d.data);
+          });
+          log.textContent = 'Connected!';
+          connectionState = false;
+        }
       });
 
       spw.on('data', (data) => {
-        const a = document.createElement('a');
-        a.innerHTML = `Download (${data.data.filename})`;
-        document.body.appendChild(a);
-        if (!files.some((d) => d.userId === data.userId)) {
-          files.push(data);
+        if (data.data.roomId === currentRoomId) {
+          const a = document.createElement('a');
+          a.innerHTML = `Download (${data.data.filename})`;
+          document.body.appendChild(a);
+          if (!files.some((d) => d.userId === data.userId && d.data.roomId === currentRoomId)) {
+            files.push(data);
+          }
+          const blob = new Blob([data.data.result], {type: 'octet/stream'});
+          const url = window.URL.createObjectURL(blob);
+          a.href = url;
+          a.download = `${data.data.filename}`;
         }
-        const blob = new Blob([data.data.result], {type: 'octet/stream'});
-        const url = window.URL.createObjectURL(blob);
-        a.href = url;
-        a.download = `${data.data.filename}`;
       });
 
       function prepareFile(filename) {
         return (e) => {
           spw.send({
+            roomId: currentRoomId,
             result: e.target.result,
             filename,
           });
