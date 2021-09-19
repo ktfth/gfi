@@ -10,7 +10,7 @@
     <script src="//unpkg.com/@feathersjs/client@^3.0.0/dist/feathers.js"></script>
     <script>
       var app = feathers();
-      var restClient = feathers.rest('http://localhost:3030');
+      var restClient = feathers.rest('https://gfi-fileshare.herokuapp.com');
 
       app.configure(restClient.fetch(window.fetch));
 
